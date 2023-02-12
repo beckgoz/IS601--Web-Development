@@ -62,8 +62,15 @@ def add_task(name: str, description: str, due: str):
     # add the new task to the tasks list
     tasks.append(task)
     # output a message confirming the new task was added or if the addition was rejected due to missing data
+    n1, n2, n3 = "", "", ""
+    if(name == ""):
+        n1 = "missing name"
+    if(description == ""):
+        n2 = "missing description"
+    if(due == ""):
+        n3 = "missing due date"
     if((name == "") or (description == "") or (due == "")):
-        print(f"Unable to add task: Insufficient data")
+        print(f"Unable to add task: {n1} {n2} {n3}")
     else:    
         print(f"Task added successfully!")
     # make sure save() is still called last in this function
@@ -81,21 +88,30 @@ def process_update(index):
     """ extracted the user input prompts to get task data then passes it to update_task() """
     # get the task by index
     # consider index out of bounds scenarios and include appropriate message(s) for invalid index
+    if(index >= len(tasks)):
+        print(f"No task at this index. Remember, index starts at 1!")
+        return
+    task = tasks[index]
+    taskname = task.get("name")
+    taskdesc = task.get("description")
+    taskdue = task.get("due")
     # show the existing value of each property where the TODOs are marked in the text of the inputs (replace the TODO related text)
     # include your ucid and date as a comment of when you implemented this, briefly summarize the solution
-    
-    name = input(f"What's the name of this task? (TODO name) \n").strip()
-    desc = input(f"What's a brief descriptions of this task? (TODO description) \n").strip()
-    due = input(f"When is this task due (format: m/d/y H:M:S) (TODO due) \n").strip()
+    """bag27:2/12/2023
+    function first checks if index is out of bounds. next it extracts the name, description, and 
+    duedate of selected task. the values are displayed next to prompts. function then
+    call update_task function to update the task"""
+
+    name = input(f"What's the name of this task? ({taskname}) \n").strip()
+    desc = input(f"What's a brief descriptions of this task? ({taskdesc}) \n").strip()
+    due = input(f"When is this task due (format: m/d/y H:M:S) ({taskdue}) \n").strip()
     update_task(index, name=name, description=desc, due=due)
 
 def update_task(index: int, name: str, description:str, due: str):
     """ Updates the name, description , due date of a task found by index if an update to the property was provided """
     # find the task by index
     # consider index out of bounds scenarios and include appropriate message(s) for invalid index
-    if(index >= len(tasks) or index < 1):
-        print(f"No task at this index. Remember, index starts at 1!")
-        return
+    """out of bounds handled in process update function"""
     # update incoming task data if it's provided (if it's not provided use the original task property value)
     s1, s2, s3 = "was not", "was not", "was not"
     if(name != ""):
@@ -114,9 +130,9 @@ def update_task(index: int, name: str, description:str, due: str):
     # make sure save() is still called last in this function
     # include your ucid and date as a comment of when you implemented this, briefly summarize the solution
     """bag27:2/12/2023
-    function first checks if index is out of bounds. next the function updates the task values
-    only if the user has input data. regardless of any changes, the lastActivity value is always
-    updated. finally, a print statement tells the user which values have been changed"""
+    the function updates the task values only if the user has input data. regardless of 
+    any changes, the lastActivity value is always updated. finally, a print statement 
+    tells the user which values have been changed"""
     save()
 
 def mark_done(index):
