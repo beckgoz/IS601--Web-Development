@@ -93,12 +93,30 @@ def update_task(index: int, name: str, description:str, due: str):
     """ Updates the name, description , due date of a task found by index if an update to the property was provided """
     # find the task by index
     # consider index out of bounds scenarios and include appropriate message(s) for invalid index
+    if(index >= len(tasks) or index < 1):
+        print(f"No task at this index. Remember, index starts at 1!")
+        return
     # update incoming task data if it's provided (if it's not provided use the original task property value)
+    s1, s2, s3 = "was not", "was not", "was not"
+    if(name != ""):
+        tasks[index].update({"name":name})
+        s1 = "was"
+    if(description != ""):
+        tasks[index].update({"description":description})
+        s2 = "was"
+    if(due != ""):
+        tasks[index].update({"due":str_to_datetime(due)})
+        s3 = "was"
     # update lastActivity with the current datetime value
+    tasks[index].update({"lastActivity":datetime.now()})
     # output that the task was updated if any items were changed, otherwise mention task was not updated
+    print(f"The task was successfully updated. Name {s1} updated, description {s2} updated, and due date {s3} updated.")
     # make sure save() is still called last in this function
     # include your ucid and date as a comment of when you implemented this, briefly summarize the solution
-    
+    """bag27:2/12/2023
+    function first checks if index is out of bounds. next the function updates the task values
+    only if the user has input data. regardless of any changes, the lastActivity value is always
+    updated. finally, a print statement tells the user which values have been changed"""
     save()
 
 def mark_done(index):
