@@ -4,7 +4,7 @@
         "due": "2023-02-20 01:01:01",
         "lastActivity": "2023-02-12 14:58:06.195155",
         "description": "mp1",
-        "done": false
+        "done": "2023-02-12 15:31:33.621757"
     },
     {
         "name": "beckshw",
@@ -18,13 +18,6 @@
         "due": "2023-02-12 06:30:00",
         "lastActivity": "2023-02-12 15:02:08.176857",
         "description": "still hungry",
-        "done": false
-    },
-    {
-        "name": "beck",
-        "due": "2023-03-09 11:11:11",
-        "lastActivity": "2023-02-12 15:07:05.174836",
-        "description": "",
         "done": false
     }
 ]

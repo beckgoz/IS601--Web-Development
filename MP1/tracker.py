@@ -53,15 +53,6 @@ def list_tasks(_tasks):
 
 def add_task(name: str, description: str, due: str):
     """ Copies the TASK_TEMPLATE and fills in the passed in data then adds the task to the tasks list """
-    task = TASK_TEMPLATE.copy() # don't delete this
-    # update lastActivity with the current datetime value
-    task.update({"lastActivity" : datetime.now()})
-    # set the name, description, and due date (all must be provided)
-    task.update({"name":name, "description":description, "due":str_to_datetime(due)})
-    # due date must match one of the formats mentioned in str_to_datetime()
-    # add the new task to the tasks list
-    tasks.append(task)
-    # output a message confirming the new task was added or if the addition was rejected due to missing data
     n1, n2, n3 = "", "", ""
     if(name == ""):
         n1 = "missing name"
@@ -71,8 +62,17 @@ def add_task(name: str, description: str, due: str):
         n3 = "missing due date"
     if((name == "") or (description == "") or (due == "")):
         print(f"Unable to add task: {n1} {n2} {n3}")
-    else:    
-        print(f"Task added successfully!")
+        return
+    task = TASK_TEMPLATE.copy() # don't delete this
+    # update lastActivity with the current datetime value
+    task.update({"lastActivity" : datetime.now()})
+    # set the name, description, and due date (all must be provided)
+    task.update({"name":name, "description":description, "due":str_to_datetime(due)})
+    # due date must match one of the formats mentioned in str_to_datetime()
+    # add the new task to the tasks list
+    tasks.append(task)
+    # output a message confirming the new task was added or if the addition was rejected due to missing data
+    print(f"Task added successfully!")
     # make sure save() is still called last in this function
     # include your ucid and date as a comment of when you implemented this, briefly summarize the solution
     save()
@@ -82,7 +82,7 @@ def add_task(name: str, description: str, due: str):
     the function takes all of the user-input arguments and updates the associated 
     key-value pairs in the task with the input. the task is then appended to the 
     tasks list. finally, a message is printed letting the user know whetherthe task
-    has been successfully added or not, depending on amount of data"""
+    has been successfully added or not, depending on missing arguments"""
 
 def process_update(index):
     """ extracted the user input prompts to get task data then passes it to update_task() """
@@ -104,7 +104,7 @@ def process_update(index):
 
     name = input(f"What's the name of this task? ({taskname}) \n").strip()
     desc = input(f"What's a brief descriptions of this task? ({taskdesc}) \n").strip()
-    due = input(f"When is this task due (format: m/d/y H:M:S) ({taskdue}) \n").strip()
+    due = input(f"When is this task due? (format: m/d/y H:M:S) ({taskdue}) \n").strip()
     update_task(index, name=name, description=desc, due=due)
 
 def update_task(index: int, name: str, description:str, due: str):
@@ -139,11 +139,23 @@ def mark_done(index):
     """ Updates a single task, via index, to a done datetime"""
     # find task from list by index
     # consider index out of bounds scenarios and include appropriate message(s) for invalid index
+    if(index >= len(tasks)):
+        print(f"No task at this index. Remember, index starts at 1!")
+        return
     # if it's not done, record the current datetime as the value
+    task = tasks[index]
+    if(task["done"] == False):
+        tasks[index].update({"done":datetime.now()})
+        print(f"Task completed!")
+    else:
+        print(f"Task already completed.")
     # if it is done, print a message saying it's already completed
     # make sure save() is still called last in this function
     # include your ucid and date as a comment of when you implemented this, briefly summarize the solution
-
+    """bag27:2/12/2023
+    first check if index is in bounds. next the done value of the task is
+    evaluated. if it is not completed, it is marked as done. if it is
+    already completed, a message saying show is shown"""
     save()
 
 def view_task(index):
@@ -167,9 +179,16 @@ def delete_task(index):
     # delete/remove task from list by index
     # message should show if it was successful or not
     # consider index out of bounds scenarios and include appropriate message(s) for invalid index
+    if(index >= len(tasks)):
+        print(f"No task at this index. Remember, index starts at 1!")
+        return
+    del tasks[index]
+    print(f"Successfully deleted")
     # make sure save() is still called last in this function
     # include your ucid and date as a comment of when you implemented this, briefly summarize the solution
-    
+    """bag27:2/12/2023
+    first made sure index was in bounds. then deleted task from list at
+    given index using the del command"""
     save()
 
 def get_incomplete_tasks():
