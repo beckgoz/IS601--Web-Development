@@ -55,13 +55,27 @@ def add_task(name: str, description: str, due: str):
     """ Copies the TASK_TEMPLATE and fills in the passed in data then adds the task to the tasks list """
     task = TASK_TEMPLATE.copy() # don't delete this
     # update lastActivity with the current datetime value
+    task.update({"lastActivity" : datetime.now()})
     # set the name, description, and due date (all must be provided)
+    task.update({"name":name, "description":description, "due":str_to_datetime(due)})
     # due date must match one of the formats mentioned in str_to_datetime()
     # add the new task to the tasks list
+    tasks.append(task)
     # output a message confirming the new task was added or if the addition was rejected due to missing data
+    if((name == "") or (description == "") or (due == "")):
+        print(f"Unable to add task: Insufficient data")
+    else:    
+        print(f"Task added successfully!")
     # make sure save() is still called last in this function
     # include your ucid and date as a comment of when you implemented this, briefly summarize the solution
     save()
+
+    """bag27:2/12/2023
+    using datetime.now(), the lastActivity value is updated to the current time. 
+    the function takes all of the user-input arguments and updates the associated 
+    key-value pairs in the task with the input. the task is then appended to the 
+    tasks list. finally, a message is printed letting the user know whetherthe task
+    has been successfully added or not, depending on amount of data"""
 
 def process_update(index):
     """ extracted the user input prompts to get task data then passes it to update_task() """
