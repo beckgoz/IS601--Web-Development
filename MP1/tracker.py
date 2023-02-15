@@ -217,6 +217,8 @@ def get_incomplete_tasks():
     for i in tasks:
         if(i['done'] == False):
             _tasks.append(i)
+    if(len(_tasks) == 0):
+        print(f'There are no incomplete tasks!')
     # pass that list into list_tasks()
     # include your ucid and date as a comment of when you implemented this, briefly summarize the solution
     """bag27:1/25/2023
@@ -232,7 +234,7 @@ def get_overdue_tasks():
     # generate a list of tasks where the due date is older than now and that are not complete
     _tasks = []
     for i in tasks:
-        if((i['done'] == False) and (str_to_datetime(i['due']) < datetime.now())):
+        if((i['done']) == False) and (str_to_datetime(i['due']) < datetime.now()):
             _tasks.append(i)
     # pass that list into list_tasks()
     # include your ucid and date as a comment of when you implemented this, briefly summarize the solution
