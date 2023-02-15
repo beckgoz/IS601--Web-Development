@@ -89,8 +89,11 @@ def process_update(index):
     # get the task by index
     # consider index out of bounds scenarios and include appropriate message(s) for invalid index
     if(index >= len(tasks)):
+        print(f"No task at this index. There are only {len(tasks)} tasks!")
+        return None
+    elif(index < 0):
         print(f"No task at this index. Remember, index starts at 1!")
-        return
+        return None
     task = tasks[index]
     taskname = task.get("name")
     taskdesc = task.get("description")
@@ -140,8 +143,11 @@ def mark_done(index):
     # find task from list by index
     # consider index out of bounds scenarios and include appropriate message(s) for invalid index
     if(index >= len(tasks)):
+        print(f"No task at this index. There are only {len(tasks)} tasks!")
+        return None
+    elif(index < 0):
         print(f"No task at this index. Remember, index starts at 1!")
-        return
+        return None
     # if it's not done, record the current datetime as the value
     task = tasks[index]
     if(task["done"] == False):
@@ -162,9 +168,15 @@ def view_task(index):
     """ View more info about a specific task fetch by index """
     # find task from list by index
     # consider index out of bounds scenarios and include appropriate message(s) for invalid index
+    if(index >= len(tasks)):
+        print(f"No task at this index. There are only {len(tasks)} tasks!")
+        return None
+    elif(index < 0):
+        print(f"No task at this index. Remember, index starts at 1!")
+        return None
     # utilize the given print statement when a task is found
     # include your ucid and date as a comment of when you implemented this, briefly summarize the solution
-    task = {}
+    task = tasks[index]
     print(f"""
         [{'x' if task['done'] else ' '}] Task: {task['name']}\n 
         Description: {task['description']} \n 
@@ -173,6 +185,10 @@ def view_task(index):
         Completed: {task['done'] if task['done'] else '-'} \n
         """.replace('  ', ' '))
 
+    """bag27:2/15/2023
+    first checks that the index is in bounds. then assigns 
+    task variable to the task at the index of the tasks list.
+    the given print statement then displays information about the task"""
 
 def delete_task(index):
     """ deletes a task from the tasks list by index """
@@ -180,8 +196,11 @@ def delete_task(index):
     # message should show if it was successful or not
     # consider index out of bounds scenarios and include appropriate message(s) for invalid index
     if(index >= len(tasks)):
+        print(f"No task at this index. There are only {len(tasks)} tasks!")
+        return None
+    elif(index < 0):
         print(f"No task at this index. Remember, index starts at 1!")
-        return
+        return None
     del tasks[index]
     print(f"Successfully deleted")
     # make sure save() is still called last in this function
@@ -194,28 +213,72 @@ def delete_task(index):
 def get_incomplete_tasks():
     """ prints a list of tasks that are not done """
     # generate a list of tasks where the task is not done
+    _tasks = []
+    for i in tasks:
+        if(i['done'] == False):
+            _tasks.append(i)
     # pass that list into list_tasks()
     # include your ucid and date as a comment of when you implemented this, briefly summarize the solution
-    _tasks = []
+    """bag27:1/25/2023
+    traverses the tasks dict using a for loop.
+    for every task, determines if done = false. if
+    done = false, task is added to _tasks which represents
+    the incomplete tasks. finally, the _tasks list is passed to the 
+    list_tasks function"""
     list_tasks(_tasks)
 
 def get_overdue_tasks():
     """ prints a list of tasks that are over due completion (not done and expired) """
     # generate a list of tasks where the due date is older than now and that are not complete
+    _tasks = []
+    for i in tasks:
+        if((i['done'] == False) and (str_to_datetime(i['due']) < datetime.now())):
+            _tasks.append(i)
     # pass that list into list_tasks()
     # include your ucid and date as a comment of when you implemented this, briefly summarize the solution
-    _tasks = []
     list_tasks(_tasks)
+    """bag27:2/15/2023
+    similar to get_incomplete_tasks, this function traverses the dict
+    to find all the tasks that are not done and have a due date that
+    is less than the current date. str_to_datetime converts the 'due' value
+    for each task to a datetime, so that it can be easily compared to
+    the current date using comparison operators"""
 
 def get_time_remaining(index):
     """ outputs the number of days, hours, minutes, seconds a task has before it's overdue otherwise shows similar info for how far past due it is """
     # get the task by index
     # consider index out of bounds scenarios and include appropriate message(s) for invalid index
+    if(index >= len(tasks)):
+        print(f"No task at this index. There are only {len(tasks)} tasks!")
+        return None
+    elif(index < 0):
+        print(f"No task at this index. Remember, index starts at 1!")
+        return None
+    task = tasks[index]
+    dif = None
     # get the days, hours, minutes, seconds between the due date and now
+    if(str_to_datetime(task['due']) >= datetime.now()):
+        dif = str_to_datetime(task['due']) - datetime.now()
+        days = dif.days #algorithm to get timedelta hours, minutes, and seconds from https://stackoverflow.com/questions/2119472/convert-a-timedelta-to-days-hours-and-minutes
+        hours, r = divmod(dif.seconds, 3600)
+        minutes, seconds = divmod(r, 60)
+        print(f'Task is due in: {days} days, {hours} hours, {minutes} minutes, and {seconds} seconds')
+    elif(str_to_datetime(task['due']) < datetime.now()):
+        dif = datetime.now() - str_to_datetime(task['due'])
+        days = dif.days
+        hours, r = divmod(dif.seconds, 3600)
+        minutes, seconds = divmod(r, 60)
+        print(f'Overdue! Task is overdue by: {days} days, {seconds} hours, {minutes} minutes, and {seconds} seconds')
     # display the remaining time via print in a clear format showing days, hours, minutes, seconds
     # if the due date is in the past print out how many days, hours, minutes, seconds the task is over due (clearly note that it's over due, values should be positive)
     # include your ucid and date as a comment of when you implemented this, briefly summarize the solution
-    task = {}
+    """bag27:2/15/2023
+    first makes sure index is in bounds. next compares current time to due date.
+    if due date > current time, function gets the days, hours, mins, and seconds to due
+    date simply using the subtraction operator. the data is then formatted using
+    an algorithm to get the hours, minutes, and seconds in a readable format. if
+    due date < current time, task is overdue. time past since due date is shown in 
+    same format"""
 
 # no changes needed below this line
 
