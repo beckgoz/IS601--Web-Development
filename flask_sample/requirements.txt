@@ -10,10 +10,13 @@ iniconfig==2.0.0
 itsdangerous==2.1.2
 Jinja2==3.1.2
 MarkupSafe==2.1.1
+mysql-connector-python==8.0.32
 packaging==23.0
 platformdirs==3.0.0
 pluggy==1.0.0
+protobuf==3.20.3
 pytest==7.2.1
+python-dotenv==1.0.0
 virtualenv==20.20.0
 Werkzeug==2.2.2
 zipp==3.9.0
