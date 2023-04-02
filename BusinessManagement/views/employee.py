@@ -9,7 +9,7 @@ def search():
     # DO NOT DELETE PROVIDED COMMENTS
     # TODO search-1 retrieve employee id as id, first_name, last_name, email, company_id, company_name using a LEFT JOIN
     query = """SELECT ...
-     FROM ... LEFT JOIN ... WHERE 1=1"""
+    FROM ... LEFT JOIN ... WHERE 1=1"""
     args = {} # <--- add values to replace %s/%(named)s placeholders
     allowed_columns = ["first_name", "last_name", "email", "company_name"]
     # TODO search-2 get fn, ln, email, company, column, order, limit from request args
@@ -36,7 +36,7 @@ def search():
     # hint: use allowed_columns in template to generate sort dropdown
     # hint2: convert allowed_columns into a list of tuples representing (value, label)
     # do this prior to passing to render_template, but not before otherwise it can break validation
-   
+    
     return render_template("list_employees.html", rows=rows, allowed_columns=allowed_columns)
 
 @employee.route("/add", methods=["GET","POST"])
@@ -100,8 +100,8 @@ def edit():
             result = DB.selectOne("""SELECT 
             ...
             FROM ... LEFT JOIN ... 
-              
-              WHERE ..."""
+            
+            WHERE ..."""
             , id)
             if result.status:
                 row = result.row
