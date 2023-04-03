@@ -32,8 +32,9 @@
                 <tr class="text-capitalize">
                     {# generate th tags for each column to display #}
                     {# IMPORTANT use table column names as the headings, replace _ with space via filter #}
-
-                    <th>Actions</th>
+                    {% for r in rows[0] %}
+                    <th>{{r}}</th>
+                    {% endfor %}
                 </tr>
             </thead>
             <tbody>
