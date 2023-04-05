@@ -23,6 +23,7 @@ def importCSV():
             pass
         else:
             flash('Not a .csv file', "warning")
+            return redirect(request.url)
         if file and secure_filename(file.filename):
             companies = []
             employees = []
