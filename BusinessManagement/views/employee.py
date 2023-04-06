@@ -17,7 +17,7 @@ def search():
     allowed_columns = ["first_name", "last_name", "email", "name"]
     # TODO search-2 get fn, ln, email, company, column, order, limit from request args
     #bag27:4/6/2023 Got all data from request args for searching for database entries.
-    #Data is pulled from list_companies.html forms
+    #Data is pulled from list_employees.html forms
     fn = request.args.get("fn")
     ln = request.args.get("ln")
     email = request.args.get("email")
@@ -83,7 +83,7 @@ def add():
     if request.method == "POST":
         # TODO add-1 retrieve form data for first_name, last_name, company, email
         #bag27:4/5/2023 Got all necessary data from request args for adding an employee.
-        #Data is pulled from add_companies.html forms
+        #Data is pulled from add_employee.html forms
         fn = request.form.get("first_name")
         ln = request.form.get("last_name")
         company = request.form.get("company")
@@ -130,7 +130,7 @@ def add():
                     flash("Created Employee Record", "success")
             except Exception as e:
                 # TODO add-7 make message user friendly
-                flash(str(e), "danger")
+                flash("Error adding employee", "danger")
     return render_template("add_employee.html")
 
 @employee.route("/edit", methods=["GET", "POST"])
