@@ -14,22 +14,22 @@
             email (required)
             and prefill the fields with loaded employee data
             #}
-            {# bag27:4/3/2023   Created labels and inputs for each required field. Preloaded
+            {# bag27:4/6/2023   Created labels and inputs for each required field. Preloaded
             data for each field from the selected employee #}
             <div class="form-group mb-3">
                 <label class="form-label" for="fn">First Name</label>
-                <input type="text" class="form-control" id="fn" name=employee.first_name />
+                <input type="text" class="form-control" id="fn" name="first_name" value="{{row.first_name}}"/>
             </div>
             <div class="form-group mb-3">
                 <label class="form-label" for="ln">Last Name</label>
-                <input type="text" class="form-control" id="ln" name=employee.last_name />
+                <input type="text" class="form-control" id="ln" name="last_name" value="{{row.last_name}}"/>
             </div>
             <div class="form-group mb-3">
                 <label class="form-label" for="e">Email</label>
-                <input type="email" class="form-control" id="e" name=employee.email />
+                <input type="email" class="form-control" id="e" name="email" value="{{row.email}}"/>
             </div>
             {# use the below for company selection #}
-            {{ company_dropdown(employee.company) }}
+            {{ company_dropdown(row.company) }}
             <input type="submit" class="btn btn-primary" value="Save Employee" />
         </form>
     </div>

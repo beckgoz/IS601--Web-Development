@@ -95,7 +95,7 @@ def importCSV():
                     flash("There was an error loading in the csv data", "danger")
             else:
                 # TODO importcsv-6 display flash message (info) that no companies were loaded
-                flash("No companies loaded")
+                flash("No companies loaded", "warning")
                 pass
             if len(employees) > 0:
                 print(f"Inserting or updating {len(employees)} employees")
@@ -108,7 +108,7 @@ def importCSV():
                     flash("There was an error loading in the csv data", "danger")
             else:
                 # TODO importcsv-8 display flash message (info) that no companies were loaded
-                flash("No employeees loaded")
+                flash("No employeees loaded", "warning")
                 pass
             try:
                 result = DB.selectOne("SHOW SESSION STATUS LIKE 'questions'")
