@@ -100,6 +100,7 @@ def add():
             has_error = True
             flash("Last name is required", "warning")
         # TODO add-4 company (may be None)
+        #bag27:4/6/2023 If no company selected, None is inserted for company_id
         if not company:
             company = None
         # TODO add-5 email is required (flash proper error message)
@@ -159,6 +160,9 @@ def edit():
                 has_error = True
                 flash("Last name is required", "warning")
             # TODO add-4 company (may be None)
+            #bag27:4/6/2023 If no company selected, None is inserted for company_id
+            if not company:
+                company = None
             # TODO add-5 email is required (flash proper error message)
             #bag27:4/5/2023 Ensures an email with proper formatting was entered
             if not email:
