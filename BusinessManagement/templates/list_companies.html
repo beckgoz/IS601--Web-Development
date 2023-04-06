@@ -15,8 +15,18 @@
     #}
     <form method="GET">
         <div class="row">
+            <div class="col">
+                <label class="form-label" for="name">Name</label>
+                <input type="text" name="name" class="form-control" id="name" placeholder="company name"
+                    value="{{request.args.get('name') or ''}}">
+            </div>
             {{country_state_selector(layout="horizontal")}}
-            {{sort_filter(cols=[...])}}
+            {{sort_filter(cols=allowed_columns)}}
+            <div class="col">
+                <label class="form-label" for="limit">Limit</label>
+                <input class="form-control" type="number" min="1" max="100" id="limit" name="limit"
+                    value="{{request.args.get('limit') or '10'}}" />
+            </div>
             <div class="col">
                 <input type="submit" class="btn btn-primary" value="Filter" />
             </div>
@@ -32,7 +42,11 @@
                 <tr class="text-capitalize">
                     {# generate th tags for each column to display #}
                     {# IMPORTANT use table column names as the headings, replace _ with space via filter #}
-
+                    {# bag27:4/5/2023 Generated header tags by iterating 
+                    through the first row in database. #}
+                    {% for r in rows[0] %}
+                    <th>{{r.replace('_', ' ')}}</th>
+                    {% endfor %}
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -46,7 +60,21 @@
                 an edit button that passes the company id to company edit
                 a delete button that passes the company id and the request args to the company delete route
                 #}
-
+                {# bag27:4/6/2023 Generated data tags by iterating 
+                through every row in database. The last two data tags
+                contain links to edit or delete the entry
+                #}
+                {% for r in rows %}
+                <tr>
+                    {% for v in r.values() %}
+                    <td>{{v}}</td>
+                    {% endfor %}
+                    <td><a href="{{url_for('company.edit', id=r.get('id'))}}" class="btn btn-secondary btn-sm">Edit</a>
+                        <a href="{{url_for('company.delete', id=r.get('id'), **request.args)}}"
+                        class="btn btn-danger btn-sm">Del</a>
+                </td>
+                </tr>
+                {% endfor %}
             </tbody>
             {% else %}
             <tbody>

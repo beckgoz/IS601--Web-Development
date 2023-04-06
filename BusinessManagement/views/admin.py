@@ -3,6 +3,7 @@ from flask import Blueprint, render_template, request, redirect, flash
 from werkzeug.utils import secure_filename
 from sql.db import DB
 import traceback
+import csv
 admin = Blueprint('admin', __name__, url_prefix='/admin')
 
 @admin.route("/import", methods=["GET","POST"])
@@ -17,6 +18,12 @@ def importCSV():
             flash('No selected file', "warning")
             return redirect(request.url)
         # TODO importcsv-1 check that it's a .csv file, return a proper flash message if it's not
+        # bag27:4/3/2023    Checking if file is .csv
+        if file.filename.endswith('.csv'):
+            pass
+        else:
+            flash('Not a .csv file', "warning")
+            return redirect(request.url)
         if file and secure_filename(file.filename):
             companies = []
             employees = []
@@ -34,7 +41,7 @@ def importCSV():
             """
             # DON'T EDIT
             employee_query = """
-             INSERT INTO IS601_MP3_Employees (first_name, last_name, email, company_id)
+            INSERT INTO IS601_MP3_Employees (first_name, last_name, email, company_id)
                         VALUES (%(first_name)s, %(last_name)s, %(email)s, (SELECT id FROM IS601_MP3_Companies WHERE name = %(company_name)s LIMIT 1))
                         ON DUPLICATE KEY UPDATE first_name=%(first_name)s, 
                         last_name = %(last_name)s, email = %(email)s, 
@@ -43,39 +50,65 @@ def importCSV():
             # Note: this reads the file as a stream instead of requiring us to save it
             stream = io.TextIOWrapper(file.stream._file, "UTF8", newline=None)
             # TODO importcsv-2 read the csv file stream as a dict
-            
-            for row in ...:
-                pass # todo remove
+            #bag27:4/5/2023 Imported csv module and used DictReader to convert csv filed to dict
+            d = csv.DictReader(stream)
+            for row in d:
                 # print(row) #example
                 # TODO importcsv-3 extract company data and append to company list 
                 # as a dict only with company data if all is present
+                """bag27:4/5/2023 Checked if all necessary company info is present. If so, added the info to a temp dict c, which is then appended
+                to companies list"""
+                if(row["company_name"]!='' and row["address"]!='' and row["city"]!='' and row["country"]!='' and row["state"]!='' and row["zip"]!='' and row["web"]!=''):
+                    c = dict(
+                        name=row["company_name"],
+                        address=row["address"],
+                        city=row["city"],
+                        country=row["country"],
+                        state=row["state"],
+                        zip=row["zip"],
+                        website=row["web"]
+                    )
+                    companies.append(c)
                 
                 # TODO importcsv-4 extract employee data and append to employee list 
                 # as a dict only with employee data if all is present
-                
-               
-               
+                """bag27:4/5/2023 Checked if all necessary employee info is present. If so, added the info to a temp dict e, 
+                which is then appended to employees list"""
+                if(row["first_name"]!='' and row["last_name"]!='' and row["email"]!='' and row["company_name"]!=''):
+                    e = dict(
+                        first_name=row["first_name"],
+                        last_name=row["last_name"],
+                        email=row["email"],
+                        company_name=row["company_name"]
+                    )
+                    employees.append(e)
+
             if len(companies) > 0:
                 print(f"Inserting or updating {len(companies)} companies")
                 try:
                     result = DB.insertMany(company_query, companies)
                     # TODO importcsv-5 display flash message about number of companies inserted
+                    #bag27:4/5/2023 Added flash messages for number of companies/employees added.
+                    flash(f"You have inserted {len(companies)} companies to the database.", "success")
                 except Exception as e:
                     traceback.print_exc()
                     flash("There was an error loading in the csv data", "danger")
             else:
                 # TODO importcsv-6 display flash message (info) that no companies were loaded
+                flash("No companies loaded", "warning")
                 pass
             if len(employees) > 0:
                 print(f"Inserting or updating {len(employees)} employees")
                 try:
                     result = DB.insertMany(employee_query, employees)
                     # TODO importcsv-7 display flash message about number of employees loaded
+                    flash(f"You have inserted {len(employees)} employees to the database.", "success")
                 except Exception as e:
                     traceback.print_exc()
                     flash("There was an error loading in the csv data", "danger")
             else:
-                 # TODO importcsv-8 display flash message (info) that no companies were loaded
+                # TODO importcsv-8 display flash message (info) that no companies were loaded
+                flash("No employeees loaded", "warning")
                 pass
             try:
                 result = DB.selectOne("SHOW SESSION STATUS LIKE 'questions'")
