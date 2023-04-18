@@ -18,17 +18,21 @@
                 </li>
                 {% else %}
                 <li class="nav-item">
-                    <a class="nav-link" href="{{url_for('auth.landing_page')}}">Home</a>
+                    <a class="nav-link" href="{{url_for('auth.dashboard')}}">Dashboard</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="{{url_for('auth.profile')}}">Profile</a>
+                    <a class="nav-link" href="{{url_for('accounts.create')}}">Create Account</a>
                 </li>
-                <!-- samples nav -->
-                {% set samples = [
-                ("sample.add", "Add"),
-                ("sample.list", "List"),
+                <li class="nav-item">
+                    <a class="nav-link" href="{{url_for('accounts.list')}}">My Accounts</a>
+                </li>
+
+                {% set actions = [
+                ("accounts.deposit", "Deposit"),
+                ("accounts.withdraw", "Withdraw"),
+                ("accounts.transfer", "Transfer"),
                 ] %}
-                {{dropdown_nav("Samples", samples)}}
+                {{dropdown_nav("Actions", actions)}}
                 <!-- roles nav (requires admin )-->
                 {% if current_user.has_role("Admin") %}
                 {% set roles = [
@@ -38,6 +42,10 @@
                 ] %}
                 {{dropdown_nav("Roles", roles)}}
                 {% endif %}
+
+                <li class="nav-item">
+                    <a class="nav-link" href="{{url_for('auth.profile')}}">Profile</a>
+                </li>
                 <li class="nav-item">
                     <a class="nav-link" href="{{url_for('auth.logout')}}">Logout</a>
                 </li>
