@@ -12,6 +12,15 @@ def create():
     user_id = current_user.get_id()
     acc = "%0.12d" % random.randrange(10**12)
     dep = 5
+
+    query = """
+        INSERT INTO IS601_Bank_Transactions
+        (account_src, account_dest, balance_change, transaction_type, memo, expected_total) VALUES
+        (%s, %s, %s, %s, %s, %s)
+        """
+    pairs = []
+    pairs.append((000000000000, acc, dep*-1, reason, details))
+    pairs.append((dest, src, change * -1, reason, details))
     #unique = DB.selectOne("SELECT account_number = %s FROM IS601_Bank_Accounts WHERE 1=1", str(acc))
     #if unique.status:
     if user_id:
