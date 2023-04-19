@@ -1,0 +1,89 @@
+{% extends "layout.html" %}
+{% block title %}Company Directory{% endblock %}
+{% block content %}
+{% from "country_state_selector.html" import country_state_selector %}
+{% from "sort_filter.html" import sort_filter %}
+<div class="container-fluid">
+    <div class="h1 text-center">Company Directory</div>
+    {# TODO
+    build a horizontal filter/sort form with
+    name (show as company name but name field should be name)
+    country/state (provided)
+    sort/order (using allowed_columns and provided partial template)
+    limit (default 10)
+    ensure all fields prefill with request arg data if provided
+    #}
+    <form method="GET">
+        <div class="row">
+            <div class="col">
+                <label class="form-label" for="name">Name</label>
+                <input type="text" name="name" class="form-control" id="name" placeholder="company name"
+                    value="{{request.args.get('name') or ''}}">
+            </div>
+            {{country_state_selector(layout="horizontal")}}
+            {{sort_filter(cols=allowed_columns)}}
+            <div class="col">
+                <label class="form-label" for="limit">Limit</label>
+                <input class="form-control" type="number" min="1" max="100" id="limit" name="limit"
+                    value="{{request.args.get('limit') or '10'}}" />
+            </div>
+            <div class="col">
+                <input type="submit" class="btn btn-primary" value="Filter" />
+            </div>
+            <div class="col">
+                <a href="?" class="btn btn-secondary">Reset</a>
+            </div>
+        </div>
+    </form>
+    <div class="table-responsive">
+        <table class="table">
+            {% if rows and rows|length > 0 %}
+            <thead>
+                <tr class="text-capitalize">
+                    {# generate th tags for each column to display #}
+                    {# IMPORTANT use table column names as the headings, replace _ with space via filter #}
+                    {# bag27:4/5/2023 Generated header tags by iterating 
+                    through the first row in database. #}
+                    {% for r in rows[0] %}
+                    <th>{{r.replace('_', ' ')}}</th>
+                    {% endfor %}
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {# generate tr with td tags for each piece of data #}
+                {# if the td is for website, display it as a link where the text is "website" and the url is the
+                website url #}
+                {# in the last column add the following
+                a view button that passes the company id to employee search (this will be a company employee
+                directory) also pass company_name as an argument
+                an edit button that passes the company id to company edit
+                a delete button that passes the company id and the request args to the company delete route
+                #}
+                {# bag27:4/6/2023 Generated data tags by iterating 
+                through every row in database. The last two data tags
+                contain links to edit or delete the entry
+                #}
+                {% for r in rows %}
+                <tr>
+                    {% for v in r.values() %}
+                    <td>{{v}}</td>
+                    {% endfor %}
+                    <td><a href="{{url_for('company.edit', id=r.get('id'))}}" class="btn btn-secondary btn-sm">Edit</a>
+                        <a href="{{url_for('company.delete', id=r.get('id'), **request.args)}}"
+                        class="btn btn-danger btn-sm">Del</a>
+                </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            {% else %}
+            <tbody>
+                <tr>
+                    <td colspan="100%">No results to show</td>
+                </tr>
+            </tbody>
+            {% endif %}
+        </table>
+    </div>
+</div>
+{% endblock %}
