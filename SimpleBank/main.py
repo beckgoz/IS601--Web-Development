@@ -7,6 +7,7 @@ load_dotenv()
 import flask_login
 from flask_login import current_user
 from flask_principal import identity_loaded, RoleNeed, UserNeed, Principal
+from flask_caching import Cache
 # added so modules can be found between the two different lookup states:
 # from tests and from regular running of the app
 CURR_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -20,7 +21,7 @@ def page_not_found(e):
 def permission_denied(e):
     return render_template("403.html"), 403
 
-
+cache = Cache(config={'CACHE_TYPE': 'SimpleCache'})
 login_manager = flask_login.LoginManager()
 # app = Flask(__name__)
 def create_app(config_filename=''):
@@ -29,8 +30,11 @@ def create_app(config_filename=''):
     app.register_error_handler(403, permission_denied)
     app.secret_key = os.environ.get("SECRET_KEY", "missing_secret")
     login_manager.init_app(app)
+    cache.init_app(app)
     # app.config.from_pyfile(config_filename)
     with app.app_context():
+        from views.index import home
+        app.register_blueprint(home)
         from views.sample import sample
         app.register_blueprint(sample)
         from auth.auth import auth
@@ -79,6 +83,21 @@ def create_app(config_filename=''):
                 for role in current_user.roles:
                     identity.provides.add(RoleNeed(role.name))
 
+        @app.template_global()
+        @cache.cached(timeout=30) # cache for 30 seconds since this is expensive
+        def get_accounts():
+            from sql.db import DB
+            try:
+                print("get accounts")
+                # note this triggers for GET and POST
+                result = DB.selectAll("SELECT account_number FROM IS601_Bank_Accounts WHERE user_id = %s", current_user.get_id())
+                if result.status:
+                    return result.rows or []
+            except Exception as e:
+                print(e)
+            return []
+        # DON'T DELETE, this cleans up the DB connection after each request
+        # this avoids sleeping queries 
         @app.teardown_request 
         def after_request_cleanup(ctx):
             from sql.db import DB

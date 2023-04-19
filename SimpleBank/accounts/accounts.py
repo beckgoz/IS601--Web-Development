@@ -12,15 +12,6 @@ def create():
     user_id = current_user.get_id()
     acc = "%0.12d" % random.randrange(10**12)
     dep = 5
-
-    query = """
-        INSERT INTO IS601_Bank_Transactions
-        (account_src, account_dest, balance_change, transaction_type, memo, expected_total) VALUES
-        (%s, %s, %s, %s, %s, %s)
-        """
-    pairs = []
-    pairs.append((000000000000, acc, dep*-1, reason, details))
-    pairs.append((dest, src, change * -1, reason, details))
     #unique = DB.selectOne("SELECT account_number = %s FROM IS601_Bank_Accounts WHERE 1=1", str(acc))
     #if unique.status:
     if user_id:
@@ -29,14 +20,27 @@ def create():
             INSERT INTO IS601_Bank_Accounts (account_number, user_id, account_type)
             VALUES (%s, %s, "checking")
             """, str(acc), user_id)
-            DB.insertOne("""
-            INSERT INTO IS601_Bank_Transactions (account_src, account_dest, balance_change, transaction_type, memo, expected_total)
-            VALUES ("000000000000", %s, %s, "deposit", "minimum $5 deposit required", %s)
-            """, str(acc), (dep*-1), (dep*-1))
-            DB.insertOne("""
-            INSERT INTO IS601_Bank_Transactions (account_src, account_dest, balance_change, transaction_type, memo, expected_total)
-            VALUES (%s, "000000000000", %s, "deposit", "minimum $5 deposit required", %s)
-            """, str(acc), dep, dep)
+            acc_bal = DB.selectOne("""SELECT balance FROM IS601_Bank_Accounts WHERE account_number = %s
+                        """, acc)
+            world_bal = DB.selectOne("""SELECT balance FROM IS601_Bank_Accounts WHERE account_number = "000000000000"
+                        """)
+            query = """
+                INSERT INTO IS601_Bank_Transactions
+                (account_src, account_dest, balance_change, transaction_type, memo, expected_total) VALUES
+                (%s, %s, %s, %s, %s, %s)
+                """
+            pairs = []
+            pairs.append(("000000000000", acc, dep*-1, "deposit", "Minimum deposit of $5 required", world_bal.row["balance"] + dep *-1))
+            pairs.append((acc, "000000000000", dep, "deposit", "Minimum deposit of $5 required", acc_bal.row["balance"] + dep))
+            DB.insertMany(query, pairs)
+            DB.update("""UPDATE IS601_Bank_Accounts SET balance = 
+                    (SELECT IFNULL(SUM(balance_change), 0) FROM IS601_Bank_Transactions WHERE account_src = %(acc)s)
+                    WHERE account_number = %(acc)s
+                    """, {"acc":acc})
+            DB.update("""UPDATE IS601_Bank_Accounts SET balance = 
+                    (SELECT IFNULL(SUM(balance_change), 0) FROM IS601_Bank_Transactions WHERE account_src = "000000000000")
+                    WHERE account_number = "000000000000"
+                    """) 
         except Exception as e:
             print(e)
             flash(f"{e}", "danger")
@@ -64,12 +68,104 @@ def list():
 @accounts.route("/deposit", methods=["GET", "POST"])
 @login_required
 def deposit():
-    pass
+    user_id = current_user.get_id()
+    if not user_id:
+        flash("No user ID", "warning")
+    else:
+        if request.method == "POST":
+            dep = request.form.get("dep")
+            a = request.form.get("account")
+            memo = request.form.get("memo")
+            has_error = False
+            if not dep or int(dep)<=0:
+                has_error = True
+                flash("Cannot deposit zero or negative amount of funds", "warning")
+            if not a:
+                has_error = True
+                flash("Must choose an account", "warning")
+            if not memo:
+                has_error = True
+                flash("Must include a memo", "warning")
+            if not has_error:
+                try:
+                    dep = int(dep)
+                    acc_bal = DB.selectOne("""SELECT balance FROM IS601_Bank_Accounts WHERE account_number = %s
+                                """, a)
+                    world_bal = DB.selectOne("""SELECT balance FROM IS601_Bank_Accounts WHERE account_number = "000000000000"
+                                """)
+                    query = """
+                        INSERT INTO IS601_Bank_Transactions
+                        (account_src, account_dest, balance_change, transaction_type, memo, expected_total) VALUES
+                        (%s, %s, %s, %s, %s, %s)
+                        """
+                    pairs = []
+                    pairs.append(("000000000000", a, dep*-1, "deposit", memo, world_bal.row["balance"] + dep *-1))
+                    pairs.append((a, "000000000000", dep, "deposit", memo , acc_bal.row["balance"] + dep))
+                    DB.insertMany(query, pairs)
+                    DB.update("""UPDATE IS601_Bank_Accounts SET balance = 
+                            (SELECT IFNULL(SUM(balance_change), 0) FROM IS601_Bank_Transactions WHERE account_src = %(acc)s)
+                            WHERE account_number = %(acc)s
+                            """, {"acc":a})
+                    DB.update("""UPDATE IS601_Bank_Accounts SET balance = 
+                            (SELECT IFNULL(SUM(balance_change), 0) FROM IS601_Bank_Transactions WHERE account_src = "000000000000")
+                            WHERE account_number = "000000000000"
+                            """) 
+                    flash(f"Successfully deposited ${dep} into {a}", "success")
+                except Exception as e:
+                    flash(f"There was an error depositing", "danger")
+    return render_template("deposit.html")
 
 @accounts.route("/withdraw", methods=["GET", "POST"])
 @login_required
 def withdraw():
-    pass
+    user_id = current_user.get_id()
+    if not user_id:
+        flash("No user ID", "warning")
+    else:
+        if request.method == "POST":
+            wd = request.form.get("wd")
+            a = request.form.get("account")
+            memo = request.form.get("memo")
+            has_error = False
+            if not wd or int(wd)<=0:
+                has_error = True
+                flash("Cannot withdraw zero or negative amount of funds", "warning")
+            if not a:
+                has_error = True
+                flash("Must choose an account", "warning")
+            if not memo:
+                has_error = True
+                flash("Must include a memo", "warning")
+            if not has_error:
+                try:
+                    wd = int(wd)
+                    acc_bal = DB.selectOne("""SELECT balance FROM IS601_Bank_Accounts WHERE account_number = %s
+                                """, a)
+                    if wd > acc_bal.row["balance"]:
+                        raise Exception("Cannot withdraw more than the account holds")
+                    world_bal = DB.selectOne("""SELECT balance FROM IS601_Bank_Accounts WHERE account_number = "000000000000"
+                                """)
+                    query = """
+                        INSERT INTO IS601_Bank_Transactions
+                        (account_src, account_dest, balance_change, transaction_type, memo, expected_total) VALUES
+                        (%s, %s, %s, %s, %s, %s)
+                        """
+                    pairs = []
+                    pairs.append((a, "000000000000", wd*-1, "withdrawal", memo, world_bal.row["balance"] + wd))
+                    pairs.append(("000000000000", a, wd, "withdrawal", memo , acc_bal.row["balance"] + wd*-1))
+                    DB.insertMany(query, pairs)
+                    DB.update("""UPDATE IS601_Bank_Accounts SET balance = 
+                            (SELECT IFNULL(SUM(balance_change), 0) FROM IS601_Bank_Transactions WHERE account_src = %(acc)s)
+                            WHERE account_number = %(acc)s
+                            """, {"acc":a})
+                    DB.update("""UPDATE IS601_Bank_Accounts SET balance = 
+                            (SELECT IFNULL(SUM(balance_change), 0) FROM IS601_Bank_Transactions WHERE account_src = "000000000000")
+                            WHERE account_number = "000000000000"
+                            """) 
+                    flash(f"Successfully withdrew ${wd} from {a}", "success")
+                except Exception as e:
+                    flash(f"{e}", "danger")
+    return render_template("withdraw.html")
 
 @accounts.route("/transfer", methods=["GET", "POST"])
 @login_required
@@ -86,7 +182,6 @@ def history():
         flash("Account is missing", "danger")
         return redirect(url_for("accounts.list"))
     else:
-        flash(acc_num, "success")
         try:
             result = DB.selectOne("""SELECT account_number, account_type, balance, created 
                                 FROM IS601_Bank_Accounts WHERE account_number = %s""", acc_num)
@@ -98,5 +193,5 @@ def history():
                 rows = result2.rows
         except Exception as e:
             print(e)
-            flash(e, "danger")
+            flash("There was an error pulling up history for this account", "danger")
     return render_template("transaction_history.html", acc=acc, rows=rows)

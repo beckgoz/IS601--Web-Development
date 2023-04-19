@@ -1,6 +1,6 @@
 CREATE TABLE
     IS601_Bank_Transactions(
-        id int AUTO_INCREMENT PRIMARY KEY,
+        id int UNIQUE AUTO_INCREMENT PRIMARY KEY,
         account_src VARCHAR(12) NOT NULL,
         account_dest VARCHAR(12) NOT NULL,
         balance_change int NOT NULL,

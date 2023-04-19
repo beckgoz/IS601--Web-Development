@@ -1,6 +1,6 @@
 CREATE TABLE
     IS601_Bank_Accounts(
-        id int AUTO_INCREMENT PRIMARY KEY,
+        id int UNIQUE AUTO_INCREMENT PRIMARY KEY,
         account_number varchar(12) UNIQUE DEFAULT (LPAD(user_id, 12, "0")),
         user_id int NOT NULL,
         balance int DEFAULT 0,

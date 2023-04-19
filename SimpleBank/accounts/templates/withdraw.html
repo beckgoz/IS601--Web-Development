@@ -1,0 +1,29 @@
+{% extends "layout.html" %}
+{% block title %}Withdraw{% endblock %}
+{% block content %}
+{% set acc = get_accounts() %}
+<div class="container-fluid">
+    <div class="h3">Withdraw</div>
+    <div>
+        <form method="POST">
+            <div class="form-group mb-3">
+                <label class="form-label" for="account">Account</label>
+                <select class="form-select mb-3" id="account" name="account">
+                    {% for a in acc %}
+                    <option value="{{a['account_number']}}">{{a['account_number']}}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group mb-3">
+                <label class="form-label" for="wd">Withdraw Amount</label>
+                <input type="text" class="form-control" id="wd" name="wd" />
+            </div>
+            <div class="form-group mb-3">
+                <label class="form-label" for="memo">Memo</label>
+                <input type="text" class="form-control" id="memo" name="memo" />
+            </div>
+            <input type="submit" class="btn btn-primary" value="Withdraw" />
+        </form>
+    </div>
+</div>
+{% endblock %}
