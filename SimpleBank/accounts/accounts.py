@@ -20,41 +20,51 @@ def create():
     user_id = current_user.get_id()
     acc = "%0.12d" % random.randrange(10**12)
     dep = 5
+    has_error = False
     #unique = DB.selectOne("SELECT account_number = %s FROM IS601_Bank_Accounts WHERE 1=1", str(acc))
     #if unique.status:
     if user_id:
         try:
-            DB.insertOne("""
-            INSERT INTO IS601_Bank_Accounts (account_number, user_id, account_type)
-            VALUES (%s, %s, "checking")
-            """, str(acc), user_id)
-            acc_bal = DB.selectOne("""SELECT balance FROM IS601_Bank_Accounts WHERE account_number = %s
-                        """, acc)
-            world_bal = DB.selectOne("""SELECT balance FROM IS601_Bank_Accounts WHERE account_number = "000000000000"
-                        """)
-            query = """
-                INSERT INTO IS601_Bank_Transactions
-                (account_src, account_dest, balance_change, transaction_type, memo, expected_total) VALUES
-                (%s, %s, %s, %s, %s, %s)
-                """
-            pairs = []
-            pairs.append(("000000000000", acc, dep*-1, "deposit", "Minimum deposit of $5 required", world_bal.row["balance"] + dep *-1))
-            pairs.append((acc, "000000000000", dep, "deposit", "Minimum deposit of $5 required", acc_bal.row["balance"] + dep))
-            DB.insertMany(query, pairs)
-            DB.update("""UPDATE IS601_Bank_Accounts SET balance = 
-                    (SELECT IFNULL(SUM(balance_change), 0) FROM IS601_Bank_Transactions WHERE account_src = %(acc)s)
-                    WHERE account_number = %(acc)s
-                    """, {"acc":acc})
-            DB.update("""UPDATE IS601_Bank_Accounts SET balance = 
-                    (SELECT IFNULL(SUM(balance_change), 0) FROM IS601_Bank_Transactions WHERE account_src = "000000000000")
-                    WHERE account_number = "000000000000"
-                    """) 
+            acc_check = DB.selectOne("""SELECT account_number FROM IS601_Bank_Accounts WHERE account_number = %s""", acc)
+            if not acc_check:
+                has_error = True
+                raise Exception("Please try again")
         except Exception as e:
-            print(e)
-            flash(f"{e}", "danger")
+            flash(f"{e}", "warning")
+        if not has_error:
+            try:
+                DB.insertOne("""
+                INSERT INTO IS601_Bank_Accounts (account_number, user_id, account_type)
+                VALUES (%s, %s, "checking")
+                """, str(acc), user_id)
+                acc_bal = DB.selectOne("""SELECT balance FROM IS601_Bank_Accounts WHERE account_number = %s
+                            """, acc)
+                world_bal = DB.selectOne("""SELECT balance FROM IS601_Bank_Accounts WHERE account_number = "000000000000"
+                            """)
+                query = """
+                    INSERT INTO IS601_Bank_Transactions
+                    (account_src, account_dest, balance_change, transaction_type, memo, expected_total) VALUES
+                    (%s, %s, %s, %s, %s, %s)
+                    """
+                pairs = []
+                pairs.append(("000000000000", acc, dep*-1, "deposit", "Minimum deposit of $5 required", world_bal.row["balance"] + dep *-1))
+                pairs.append((acc, "000000000000", dep, "deposit", "Minimum deposit of $5 required", acc_bal.row["balance"] + dep))
+                DB.insertMany(query, pairs)
+                DB.update("""UPDATE IS601_Bank_Accounts SET balance = 
+                        (SELECT IFNULL(SUM(balance_change), 0) FROM IS601_Bank_Transactions WHERE account_src = %(acc)s)
+                        WHERE account_number = %(acc)s
+                        """, {"acc":acc})
+                DB.update("""UPDATE IS601_Bank_Accounts SET balance = 
+                        (SELECT IFNULL(SUM(balance_change), 0) FROM IS601_Bank_Transactions WHERE account_src = "000000000000")
+                        WHERE account_number = "000000000000"
+                        """) 
+                flash("Account successfully created!", "success")
+            except Exception as e:
+                print(e)
+                flash(f"{e}", "danger")
     #else:
         #flash("Error creating account, please try again.", "danger")
-    flash("Account successfully created!", "success")
+    
     return redirect(url_for("accounts.list"))
 
 """bag27:4/18/2023 The account list path is used to list all
@@ -218,7 +228,7 @@ def history():
                                 FROM IS601_Bank_Accounts WHERE account_number = %s""", acc_num)
             if result.status:
                 acc = result.row
-            result2 = DB.selectAll("""SELECT account_src, account_dest, balance_change, created, expected_total, memo
+            result2 = DB.selectAll("""SELECT account_src, account_dest, transaction_type, balance_change, created, expected_total, memo
                                 FROM IS601_Bank_Transactions WHERE account_src = %s""", acc_num)
             if result2.status:
                 rows = result2.rows
