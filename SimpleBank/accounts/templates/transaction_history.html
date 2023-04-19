@@ -1,0 +1,64 @@
+{% extends "layout.html" %}
+{% block title %}Account History{% endblock %}
+{% block head %}
+{{ super() }}
+{% endblock %}
+{% block content %}
+<div class="container-fluid">
+    <div class="h2">Account History</div>
+    <table class="table">
+        {% if acc and acc|length > 0 %}
+        <thead>
+            <tr class="text-capitalize">
+                <th>Account Number</th>
+                <th>Type</th>
+                <th>Balance</th>
+                <th>Date Created</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>{{acc.account_number}}</td>
+                <td>{{acc.account_type}}</td>
+                <td>{{acc.balance}}</td>
+                <td>{{acc.created}}</td>
+            </tr>
+        </tbody>
+        {% else %}
+        <tbody>
+            <tr>
+                <td colspan="100%">No results to show</td>
+            </tr>
+        </tbody>
+        {% endif %}
+    </table>
+    <div class="h3">Transactions</div>
+    <table class="table">
+        {% if rows and rows|length > 0 %}
+        <thead>
+            <tr class="text-capitalize">
+                {% for r in rows[0] %}
+                <th>{{r.replace('_', ' ')}}</th>
+                {% endfor %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in rows %}
+            <tr>
+                {% for v in r.values() %}
+                <td>{{v}}</td>
+                {% endfor %}
+            </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        {% else %}
+        <tbody>
+            <tr>
+                <td colspan="100%">No results to show</td>
+            </tr>
+        </tbody>
+        {% endif %}
+    </table>
+</div>
+{% endblock %}
