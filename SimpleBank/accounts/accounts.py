@@ -219,7 +219,7 @@ def internal_transfer():
             has_error = False
             if not dep or int(dep)<=0:
                 has_error = True
-                flash("Cannot deposit zero or negative amount of funds", "warning")
+                flash("Cannot transfer zero or negative amount of funds", "warning")
             if not sa:
                 has_error = True
                 flash("Must choose a source account", "warning")
@@ -267,7 +267,70 @@ def internal_transfer():
 @accounts.route("/external_transfer", methods=["GET", "POST"])
 @login_required
 def external_transfer():
-    pass
+    user_id = current_user.get_id()
+    if not user_id:
+        flash("No user ID", "warning")
+    else:
+        if request.method == "POST":
+            sa = request.form.get("sa")
+            ln = request.form.get("ln")
+            da = request.form.get("da")
+            dep = request.form.get("dep")
+            memo = request.form.get("memo")
+            has_error = False
+            if not dep or int(dep)<=0:
+                has_error = True
+                flash("Cannot transfer zero or negative amount of funds", "warning")
+            if not sa:
+                has_error = True
+                flash("Must choose a source account", "warning")
+            if not ln:
+                has_error = True
+                flash("Must include destination owner's last name", "warning")
+            if not da and len(da) != 4:
+                has_error = True
+                flash("Must include only last 4 digits of destination account", "warning")
+            if not memo:
+                has_error = True
+                flash("Must include a memo", "warning")
+            if not has_error:
+                try:
+                    dep = int(dep)
+                    sa_bal = DB.selectOne("""SELECT balance FROM IS601_Bank_Accounts WHERE account_number = %s
+                                """, sa)
+                    dest_acc = DB.selectOne("""SELECT account_number FROM IS601_Bank_Accounts 
+                    LEFT JOIN IS601_Users on IS601_Bank_Accounts.user_id = IS601_Users.id 
+                    WHERE last_name LIKE %s and account_number LIKE CONCAT('%', %s)
+                    """, ln, da)
+                    if not dest_acc.row:
+                        raise Exception("Could not find such account")
+                    d_acc = dest_acc.row["account_number"]
+                    dest_bal = DB.selectOne("""SELECT balance FROM IS601_Bank_Accounts WHERE account_number = %s
+                                """, d_acc)
+                    
+                    if dep > sa_bal.row["balance"]:
+                        raise Exception("Cannot transfer more than what is in the account")
+                    query = """
+                        INSERT INTO IS601_Bank_Transactions
+                        (account_src, account_dest, balance_change, transaction_type, memo, expected_total) VALUES
+                        (%s, %s, %s, %s, %s, %s)
+                        """
+                    pairs = []
+                    pairs.append((sa, d_acc, dep*-1, "ext_transfer", memo, sa_bal.row["balance"] + dep *-1))
+                    pairs.append((d_acc, sa, dep, "ext_transfer", memo , dest_bal.row["balance"] + dep))
+                    DB.insertMany(query, pairs)
+                    DB.update("""UPDATE IS601_Bank_Accounts SET balance = 
+                            (SELECT IFNULL(SUM(balance_change), 0) FROM IS601_Bank_Transactions WHERE account_src = %(acc)s)
+                            WHERE account_number = %(acc)s
+                            """, {"acc":sa})
+                    DB.update("""UPDATE IS601_Bank_Accounts SET balance = 
+                            (SELECT IFNULL(SUM(balance_change), 0) FROM IS601_Bank_Transactions WHERE account_src = %(acc)s)
+                            WHERE account_number = %(acc)s
+                            """, {"acc":d_acc})
+                    flash(f"Successfully transfered ${dep} from {sa} into {d_acc}, which is owned by {ln}", "success")
+                except Exception as e:
+                    flash(f"{e}", "danger")
+    return render_template("external_transfer.html")
 
 """bag27:4/18/2023 The history route takes the account number
 from the account selected in the list page and lists
