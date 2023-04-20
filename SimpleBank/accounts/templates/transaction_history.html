@@ -34,7 +34,7 @@
         {% endif %}
     </table>
     <div class="h3">Transactions</div>
-    <table class="table">
+    <table class="table" data-pagination="true" data-side-pagination="server" data-page-size="10">
         {% if rows and rows|length > 0 %}
         <thead>
             <tr class="text-capitalize">
