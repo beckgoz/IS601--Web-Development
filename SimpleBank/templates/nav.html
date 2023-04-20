@@ -31,7 +31,8 @@
                 {% set actions = [
                 ("accounts.deposit", "Deposit"),
                 ("accounts.withdraw", "Withdraw"),
-                ("accounts.transfer", "Transfer"),
+                ("accounts.internal_transfer", "Internal Transfer"),
+                ("accounts.external_transfer", "External Transfer")
                 ] %}
                 {{dropdown_nav("Actions", actions)}}
                 <!-- roles nav (requires admin )-->

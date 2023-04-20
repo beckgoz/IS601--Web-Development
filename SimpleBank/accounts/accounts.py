@@ -204,9 +204,69 @@ def withdraw():
                     flash(f"{e}", "danger")
     return render_template("withdraw.html")
 
-@accounts.route("/transfer", methods=["GET", "POST"])
+@accounts.route("/internal_transfer", methods=["GET", "POST"])
 @login_required
-def transfer():
+def internal_transfer():
+    user_id = current_user.get_id()
+    if not user_id:
+        flash("No user ID", "warning")
+    else:
+        if request.method == "POST":
+            sa = request.form.get("sa")
+            da = request.form.get("da")
+            dep = request.form.get("dep")
+            memo = request.form.get("memo")
+            has_error = False
+            if not dep or int(dep)<=0:
+                has_error = True
+                flash("Cannot deposit zero or negative amount of funds", "warning")
+            if not sa:
+                has_error = True
+                flash("Must choose a source account", "warning")
+            if not da:
+                has_error = True
+                flash("Must choose a destination account", "warning")
+            if not memo:
+                has_error = True
+                flash("Must include a memo", "warning")
+            if sa == da:
+                has_error = True
+                flash("Cannot transfer to same account", "warning")
+            if not has_error:
+                try:
+                    dep = int(dep)
+                    sa_bal = DB.selectOne("""SELECT balance FROM IS601_Bank_Accounts WHERE account_number = %s
+                                """, sa)
+                    da_bal = DB.selectOne("""SELECT balance FROM IS601_Bank_Accounts WHERE account_number = %s
+                                """, da)
+                    
+                    if dep > sa_bal.row["balance"]:
+                        raise Exception("Cannot transfer more than what is in the account")
+                    query = """
+                        INSERT INTO IS601_Bank_Transactions
+                        (account_src, account_dest, balance_change, transaction_type, memo, expected_total) VALUES
+                        (%s, %s, %s, %s, %s, %s)
+                        """
+                    pairs = []
+                    pairs.append((sa, da, dep*-1, "int_transfer", memo, sa_bal.row["balance"] + dep *-1))
+                    pairs.append((da, sa, dep, "int_transfer", memo , da_bal.row["balance"] + dep))
+                    DB.insertMany(query, pairs)
+                    DB.update("""UPDATE IS601_Bank_Accounts SET balance = 
+                            (SELECT IFNULL(SUM(balance_change), 0) FROM IS601_Bank_Transactions WHERE account_src = %(acc)s)
+                            WHERE account_number = %(acc)s
+                            """, {"acc":sa})
+                    DB.update("""UPDATE IS601_Bank_Accounts SET balance = 
+                            (SELECT IFNULL(SUM(balance_change), 0) FROM IS601_Bank_Transactions WHERE account_src = %(acc)s)
+                            WHERE account_number = %(acc)s
+                            """, {"acc":da})
+                    flash(f"Successfully deposited ${dep} from {sa} into {da}", "success")
+                except Exception as e:
+                    flash(f"{e}", "danger")
+    return render_template("internal_transfer.html")
+
+@accounts.route("/external_transfer", methods=["GET", "POST"])
+@login_required
+def external_transfer():
     pass
 
 """bag27:4/18/2023 The history route takes the account number
