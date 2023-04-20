@@ -21,6 +21,8 @@ class AuthForm(FlaskForm):
         print("checking ", field.data)
         is_valid_username(field.data)
 class RegisterForm(AuthForm):
+    first_name = StringField("first_name", validators=[DataRequired(), Length(1, 30)])
+    last_name = StringField("last_name", validators=[DataRequired(), Length(1, 30)])
     submit = SubmitField("Register")
 
 class LoginForm(AuthForm):
@@ -48,6 +50,8 @@ class LoginForm(AuthForm):
                 
 class ProfileForm(AuthForm):
     current_password = PasswordField("current password", validators=[Optional()])
+    first_name = StringField("first_name", validators=[Optional(), Length(1, 30)])
+    last_name = StringField("last_name", validators=[Optional(), Length(1, 30)])
     # https://wtforms.readthedocs.io/en/3.0.x/forms/#form-inheritance
     def __init__(self, *args, **kwargs):
         super(ProfileForm, self).__init__( *args, **kwargs)
