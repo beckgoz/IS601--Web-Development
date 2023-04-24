@@ -34,32 +34,67 @@
         {% endif %}
     </table>
     <div class="h3">Transactions</div>
-    <table class="table" data-pagination="true" data-side-pagination="server" data-page-size="10">
-        {% if rows and rows|length > 0 %}
-        <thead>
-            <tr class="text-capitalize">
-                {% for r in rows[0] %}
-                <th>{{r.replace('_', ' ')}}</th>
+    <form method = "GET" class="row row-cols-lg-auto g-3 align-items-center">
+        <div class="col-12">
+            <label class="form-label" for="account_number">Account</label>
+            <input type="text" name="account_number" class="form-control" id="account_number"
+                readonly value="{{acc.account_number}}">
+        </div>
+        <div class="col-12">
+            <label class="form-label" for="tt">Transaction Type</label>
+            <select class="form-select" id="tt" name="tt">
+                <option {{'selected' if request.args.get('tt')=='' }} value="">All</option>
+                <option {{'selected' if request.args.get('tt')=='deposit' }} value="deposit">Deposit</option>
+                <option {{'selected' if request.args.get('tt')=='withdrawal' }} value="withdrawal">Withdrawal</option>
+                <option {{'selected' if request.args.get('tt')=='transfer' }} value="transfer">Transfer</option>
+            </select>
+        </div>
+        <div class="col-12">
+            <label class="form-label" for="fd">From Date</label>
+            <input type="text" name="fd" class="form-control" id="fd" placeholder="format YYYY-MM-DD"
+                value="{{request.args.get('fd') or ''}}">
+        </div>
+        <div class="col-12">
+            <label class="form-label" for="td">To Date</label>
+            <input type="text" name="td" class="form-control" id="td" placeholder="format YYYY-MM-DD"
+                value="{{request.args.get('td') or ''}}">
+        </div>
+        <div class="col">
+            <input type="submit" class="btn btn-primary" value="Filter" />
+        </div>
+        <div class="col">
+            <a href="?account_number={{acc.account_number}}" class="btn btn-secondary">Reset</a>
+        </div>
+    </form>
+    <div class="table-responsive">
+        <table class="table">
+            {% if rows and rows|length > 0 %}
+            <thead>
+                <tr class="text-capitalize">
+                    {% for r in rows[0] %}
+                    <th>{{r.replace('_', ' ')}}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in rows %}
+                <tr>
+                    {% for v in r.values() %}
+                    <td>{{v}}</td>
+                    {% endfor %}
+                </td>
+                </tr>
                 {% endfor %}
-            </tr>
-        </thead>
-        <tbody>
-            {% for r in rows %}
-            <tr>
-                {% for v in r.values() %}
-                <td>{{v}}</td>
-                {% endfor %}
-            </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-        {% else %}
-        <tbody>
-            <tr>
-                <td colspan="100%">No results to show</td>
-            </tr>
-        </tbody>
-        {% endif %}
-    </table>
+            </tbody>
+            {% else %}
+            <tbody>
+                <tr>
+                    <td colspan="100%">No results to show</td>
+                </tr>
+            </tbody>
+            {% endif %}
+        </table>
+    </div>
+    {{pagination.links}}
 </div>
 {% endblock %}
