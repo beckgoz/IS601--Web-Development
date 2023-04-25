@@ -218,6 +218,7 @@ def internal_transfer():
             dep = request.form.get("dep")
             memo = request.form.get("memo")
             has_error = False
+            #bag27:4/20/2023 If transfer amount is 0 or negative, transfer is stopped
             if not dep or int(dep)<=0:
                 has_error = True
                 flash("Cannot transfer zero or negative amount of funds", "warning")
@@ -230,6 +231,7 @@ def internal_transfer():
             if not memo:
                 has_error = True
                 flash("Must include a memo", "warning")
+            #bag27:4/20/2023 If source acc = dest acc, transfer is stopped
             if sa == da:
                 has_error = True
                 flash("Cannot transfer to same account", "warning")
@@ -279,6 +281,7 @@ def external_transfer():
             dep = request.form.get("dep")
             memo = request.form.get("memo")
             has_error = False
+            #bag27:4/20/2023 If transfer amount is 0 or negative, transfer is stopped
             if not dep or int(dep)<=0:
                 has_error = True
                 flash("Cannot transfer zero or negative amount of funds", "warning")
@@ -299,16 +302,18 @@ def external_transfer():
                     dep = int(dep)
                     sa_bal = DB.selectOne("""SELECT balance FROM IS601_Bank_Accounts WHERE account_number = %s
                                 """, sa)
+                    #bag27:4/20/2023 Query to find destination account using like and concat
                     dest_acc = DB.selectOne("""SELECT account_number FROM IS601_Bank_Accounts 
                     LEFT JOIN IS601_Users on IS601_Bank_Accounts.user_id = IS601_Users.id 
                     WHERE last_name LIKE %s and account_number LIKE CONCAT('%', %s)
                     """, ln, da)
+                    #bag27:4/20/2023 If query empty, no account exists
                     if not dest_acc.row:
                         raise Exception("Could not find such account")
                     d_acc = dest_acc.row["account_number"]
                     dest_bal = DB.selectOne("""SELECT balance FROM IS601_Bank_Accounts WHERE account_number = %s
                                 """, d_acc)
-                    
+                    #bag27:4/20/2023 If transfer more than source account balance, exception raised
                     if dep > sa_bal.row["balance"]:
                         raise Exception("Cannot transfer more than what is in the account")
                     query = """
