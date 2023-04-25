@@ -1,5 +1,6 @@
 from flask import Blueprint, redirect, request, render_template, url_for, flash
 from flask_login import login_user, login_required, logout_user, current_user
+from flask_paginate import Pagination, get_page_args
 from werkzeug.datastructures import MultiDict
 import random
 
@@ -335,27 +336,55 @@ def external_transfer():
 """bag27:4/18/2023 The history route takes the account number
 from the account selected in the list page and lists
 all entries where the account was involved in a transaction as
-the source."""
+the source.
+For pagination, used these sources for help:
+https://www.youtube.com/watch?v=vt0OXl2WCGI
+https://gist.github.com/mozillazg/69fb40067ae6d80386e10e105e6803c9"""
 @accounts.route("/history", methods=["GET"])
 @login_required
 def history():
     acc_num = request.args.get("account_number")
+    tt = request.args.get("tt")
+    fd = request.args.get("fd")
+    td = request.args.get("td")
+    query = """SELECT account_src, account_dest, transaction_type, balance_change, created, expected_total, memo
+            FROM IS601_Bank_Transactions WHERE account_src = %(acc_num)s"""
     acc = None
     rows = []
+    args = {}
+
+    page, per_page, offset = get_page_args(page_parameter="page", per_page_parameter="per_page")
+
+    if tt:
+        query += " AND transaction_type LIKE CONCAT('%', %(tt)s) "
+        args["tt"]= tt
+    if fd:
+        query += " AND DATE(created) >= %(fd)s "
+        args["fd"]= fd
+    if td:
+        query += " AND DATE(created) <= %(td)s "
+        args["td"]= td
     if acc_num is None:
         flash("Account is missing", "danger")
         return redirect(url_for("accounts.list"))
     else:
+        args["acc_num"] = acc_num
+        print("query", query)
+        print("args", args)
         try:
             result = DB.selectOne("""SELECT account_number, account_type, balance, created 
                                 FROM IS601_Bank_Accounts WHERE account_number = %s""", acc_num)
             if result.status:
                 acc = result.row
-            result2 = DB.selectAll("""SELECT account_src, account_dest, transaction_type, balance_change, created, expected_total, memo
-                                FROM IS601_Bank_Transactions WHERE account_src = %s""", acc_num)
+            #result2 = DB.selectAll("""SELECT account_src, account_dest, transaction_type, balance_change, created, expected_total, memo
+                                #FROM IS601_Bank_Transactions WHERE account_src = %s""", acc_num)
+            result2 = DB.selectAll(query, args)
             if result2.status:
-                rows = result2.rows
+                entries = result2.rows
+                rows = entries[offset: offset + per_page]
+            total = len(entries)
+            pagination = Pagination(page=page, per_page=10, total=total)
         except Exception as e:
             print(e)
             flash("There was an error pulling up history for this account", "danger")
-    return render_template("transaction_history.html", acc=acc, rows=rows)
+    return render_template("transaction_history.html", acc=acc, rows=rows, page=page, per_page=10, pagination=pagination)
