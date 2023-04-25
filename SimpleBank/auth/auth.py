@@ -28,13 +28,16 @@ def register():
     form = RegisterForm()
     # wtform validators are both client-side and server-side
     if form.validate_on_submit():
+        fn = form.first_name.data
+        ln = form.last_name.data
         email = form.email.data
         password = form.password.data
         username = form.username.data
         try:
             hash = bcrypt.generate_password_hash(password)
             # save the hash, not the plaintext password
-            result = DB.insertOne("INSERT INTO IS601_Users (email, username, password) VALUES (%s, %s, %s)", email, username, hash)
+            result = DB.insertOne("INSERT INTO IS601_Users (first_name, last_name, email, username, password) VALUES (%s, %s, %s, %s, %s)"
+                                , fn, ln, email, username, hash)
             if result.status:
                 flash("Successfully registered","success")
         except Exception as e:
@@ -50,7 +53,7 @@ def login():
         password = form.password.data
         if is_valid:
             try:
-                result = DB.selectOne("SELECT id, email, username, password FROM IS601_Users where email= %(email)s or username=%(email)s", {"email":email})
+                result = DB.selectOne("SELECT id, first_name, last_name, email, username, password FROM IS601_Users where email= %(email)s or username=%(email)s", {"email":email})
                 if result.status and result.row:
                     hash = result.row["password"]
                     if bcrypt.check_password_hash(hash, password):
@@ -114,6 +117,8 @@ def profile():
     form = ProfileForm()
     if form.validate_on_submit():
         is_valid = True
+        fn = form.first_name.data
+        ln = form.last_name.data
         email = form.email.data
         username = form.username.data
         current_password = form.current_password.data
@@ -141,22 +146,26 @@ def profile():
         
         if is_valid:
             try: # update email, username (this will trigger if nothing changed but it's fine)
-                result = DB.update("UPDATE IS601_Users SET email = %s, username = %s WHERE id = %s", email, username, user_id)
+                result = DB.update("UPDATE IS601_Users SET first_name = %s, last_name = %s, email = %s, username = %s WHERE id = %s", fn, ln, email, username, user_id)
                 if result.status:
                     flash("Saved profile", "success")
             except Exception as e:
                 check_duplicate(e)
     try:
         # get latest info if anything changed
-        result = DB.selectOne("SELECT id, email, username FROM IS601_Users where id = %s", user_id)
+        result = DB.selectOne("SELECT id, first_name, last_name, email, username FROM IS601_Users where id = %s", user_id)
         if result.status and result.row:
             user = User(**result.row)
             # switch how user is loaded so we don't lose error validations
             # form = ProfileForm(obj=user)
             print("loading user", user)
+            form.first_name.data = user.first_name
+            form.last_name.data = user.last_name
             form.username.data = user.username
             form.email.data = user.email
             # TODO update session
+            current_user.first_name = user.first_name
+            current_user.last_name = user.last_name
             current_user.email = user.email
             current_user.username = user.username
             session["user"] = current_user.toJson()

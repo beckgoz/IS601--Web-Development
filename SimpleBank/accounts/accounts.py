@@ -1,5 +1,6 @@
 from flask import Blueprint, redirect, request, render_template, url_for, flash
 from flask_login import login_user, login_required, logout_user, current_user
+from flask_paginate import Pagination, get_page_args
 from werkzeug.datastructures import MultiDict
 import random
 
@@ -204,35 +205,191 @@ def withdraw():
                     flash(f"{e}", "danger")
     return render_template("withdraw.html")
 
-@accounts.route("/transfer", methods=["GET", "POST"])
+@accounts.route("/internal_transfer", methods=["GET", "POST"])
 @login_required
-def transfer():
-    pass
+def internal_transfer():
+    user_id = current_user.get_id()
+    if not user_id:
+        flash("No user ID", "warning")
+    else:
+        if request.method == "POST":
+            sa = request.form.get("sa")
+            da = request.form.get("da")
+            dep = request.form.get("dep")
+            memo = request.form.get("memo")
+            has_error = False
+            #bag27:4/20/2023 If transfer amount is 0 or negative, transfer is stopped
+            if not dep or int(dep)<=0:
+                has_error = True
+                flash("Cannot transfer zero or negative amount of funds", "warning")
+            if not sa:
+                has_error = True
+                flash("Must choose a source account", "warning")
+            if not da:
+                has_error = True
+                flash("Must choose a destination account", "warning")
+            if not memo:
+                has_error = True
+                flash("Must include a memo", "warning")
+            #bag27:4/20/2023 If source acc = dest acc, transfer is stopped
+            if sa == da:
+                has_error = True
+                flash("Cannot transfer to same account", "warning")
+            if not has_error:
+                try:
+                    dep = int(dep)
+                    sa_bal = DB.selectOne("""SELECT balance FROM IS601_Bank_Accounts WHERE account_number = %s
+                                """, sa)
+                    da_bal = DB.selectOne("""SELECT balance FROM IS601_Bank_Accounts WHERE account_number = %s
+                                """, da)
+                    
+                    if dep > sa_bal.row["balance"]:
+                        raise Exception("Cannot transfer more than what is in the account")
+                    query = """
+                        INSERT INTO IS601_Bank_Transactions
+                        (account_src, account_dest, balance_change, transaction_type, memo, expected_total) VALUES
+                        (%s, %s, %s, %s, %s, %s)
+                        """
+                    pairs = []
+                    pairs.append((sa, da, dep*-1, "int_transfer", memo, sa_bal.row["balance"] + dep *-1))
+                    pairs.append((da, sa, dep, "int_transfer", memo , da_bal.row["balance"] + dep))
+                    DB.insertMany(query, pairs)
+                    DB.update("""UPDATE IS601_Bank_Accounts SET balance = 
+                            (SELECT IFNULL(SUM(balance_change), 0) FROM IS601_Bank_Transactions WHERE account_src = %(acc)s)
+                            WHERE account_number = %(acc)s
+                            """, {"acc":sa})
+                    DB.update("""UPDATE IS601_Bank_Accounts SET balance = 
+                            (SELECT IFNULL(SUM(balance_change), 0) FROM IS601_Bank_Transactions WHERE account_src = %(acc)s)
+                            WHERE account_number = %(acc)s
+                            """, {"acc":da})
+                    flash(f"Successfully deposited ${dep} from {sa} into {da}", "success")
+                except Exception as e:
+                    flash(f"{e}", "danger")
+    return render_template("internal_transfer.html")
+
+@accounts.route("/external_transfer", methods=["GET", "POST"])
+@login_required
+def external_transfer():
+    user_id = current_user.get_id()
+    if not user_id:
+        flash("No user ID", "warning")
+    else:
+        if request.method == "POST":
+            sa = request.form.get("sa")
+            ln = request.form.get("ln")
+            da = request.form.get("da")
+            dep = request.form.get("dep")
+            memo = request.form.get("memo")
+            has_error = False
+            #bag27:4/20/2023 If transfer amount is 0 or negative, transfer is stopped
+            if not dep or int(dep)<=0:
+                has_error = True
+                flash("Cannot transfer zero or negative amount of funds", "warning")
+            if not sa:
+                has_error = True
+                flash("Must choose a source account", "warning")
+            if not ln:
+                has_error = True
+                flash("Must include destination owner's last name", "warning")
+            if not da and len(da) != 4:
+                has_error = True
+                flash("Must include only last 4 digits of destination account", "warning")
+            if not memo:
+                has_error = True
+                flash("Must include a memo", "warning")
+            if not has_error:
+                try:
+                    dep = int(dep)
+                    sa_bal = DB.selectOne("""SELECT balance FROM IS601_Bank_Accounts WHERE account_number = %s
+                                """, sa)
+                    #bag27:4/20/2023 Query to find destination account using like and concat
+                    dest_acc = DB.selectOne("""SELECT account_number FROM IS601_Bank_Accounts 
+                    LEFT JOIN IS601_Users on IS601_Bank_Accounts.user_id = IS601_Users.id 
+                    WHERE last_name LIKE %s and account_number LIKE CONCAT('%', %s)
+                    """, ln, da)
+                    #bag27:4/20/2023 If query empty, no account exists
+                    if not dest_acc.row:
+                        raise Exception("Could not find such account")
+                    d_acc = dest_acc.row["account_number"]
+                    dest_bal = DB.selectOne("""SELECT balance FROM IS601_Bank_Accounts WHERE account_number = %s
+                                """, d_acc)
+                    #bag27:4/20/2023 If transfer more than source account balance, exception raised
+                    if dep > sa_bal.row["balance"]:
+                        raise Exception("Cannot transfer more than what is in the account")
+                    query = """
+                        INSERT INTO IS601_Bank_Transactions
+                        (account_src, account_dest, balance_change, transaction_type, memo, expected_total) VALUES
+                        (%s, %s, %s, %s, %s, %s)
+                        """
+                    pairs = []
+                    pairs.append((sa, d_acc, dep*-1, "ext_transfer", memo, sa_bal.row["balance"] + dep *-1))
+                    pairs.append((d_acc, sa, dep, "ext_transfer", memo , dest_bal.row["balance"] + dep))
+                    DB.insertMany(query, pairs)
+                    DB.update("""UPDATE IS601_Bank_Accounts SET balance = 
+                            (SELECT IFNULL(SUM(balance_change), 0) FROM IS601_Bank_Transactions WHERE account_src = %(acc)s)
+                            WHERE account_number = %(acc)s
+                            """, {"acc":sa})
+                    DB.update("""UPDATE IS601_Bank_Accounts SET balance = 
+                            (SELECT IFNULL(SUM(balance_change), 0) FROM IS601_Bank_Transactions WHERE account_src = %(acc)s)
+                            WHERE account_number = %(acc)s
+                            """, {"acc":d_acc})
+                    flash(f"Successfully transfered ${dep} from {sa} into {d_acc}, which is owned by {ln}", "success")
+                except Exception as e:
+                    flash(f"{e}", "danger")
+    return render_template("external_transfer.html")
 
 """bag27:4/18/2023 The history route takes the account number
 from the account selected in the list page and lists
 all entries where the account was involved in a transaction as
-the source."""
+the source.
+For pagination, used these sources for help:
+https://www.youtube.com/watch?v=vt0OXl2WCGI
+https://gist.github.com/mozillazg/69fb40067ae6d80386e10e105e6803c9"""
 @accounts.route("/history", methods=["GET"])
 @login_required
 def history():
     acc_num = request.args.get("account_number")
+    tt = request.args.get("tt")
+    fd = request.args.get("fd")
+    td = request.args.get("td")
+    query = """SELECT account_src, account_dest, transaction_type, balance_change, created, expected_total, memo
+            FROM IS601_Bank_Transactions WHERE account_src = %(acc_num)s"""
     acc = None
     rows = []
+    args = {}
+
+    page, per_page, offset = get_page_args(page_parameter="page", per_page_parameter="per_page")
+
+    if tt:
+        query += " AND transaction_type LIKE CONCAT('%', %(tt)s) "
+        args["tt"]= tt
+    if fd:
+        query += " AND DATE(created) >= %(fd)s "
+        args["fd"]= fd
+    if td:
+        query += " AND DATE(created) <= %(td)s "
+        args["td"]= td
     if acc_num is None:
         flash("Account is missing", "danger")
         return redirect(url_for("accounts.list"))
     else:
+        args["acc_num"] = acc_num
+        print("query", query)
+        print("args", args)
         try:
             result = DB.selectOne("""SELECT account_number, account_type, balance, created 
                                 FROM IS601_Bank_Accounts WHERE account_number = %s""", acc_num)
             if result.status:
                 acc = result.row
-            result2 = DB.selectAll("""SELECT account_src, account_dest, transaction_type, balance_change, created, expected_total, memo
-                                FROM IS601_Bank_Transactions WHERE account_src = %s""", acc_num)
+            #result2 = DB.selectAll("""SELECT account_src, account_dest, transaction_type, balance_change, created, expected_total, memo
+                                #FROM IS601_Bank_Transactions WHERE account_src = %s""", acc_num)
+            result2 = DB.selectAll(query, args)
             if result2.status:
-                rows = result2.rows
+                entries = result2.rows
+                rows = entries[offset: offset + per_page]
+            total = len(entries)
+            pagination = Pagination(page=page, per_page=10, total=total)
         except Exception as e:
             print(e)
             flash("There was an error pulling up history for this account", "danger")
-    return render_template("transaction_history.html", acc=acc, rows=rows)
+    return render_template("transaction_history.html", acc=acc, rows=rows, page=page, per_page=10, pagination=pagination)

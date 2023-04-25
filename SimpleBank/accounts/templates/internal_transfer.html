@@ -1,0 +1,38 @@
+{% extends "layout.html" %}
+{% block title %}Internal Transfer{% endblock %}
+{% block content %}
+{% set acc = get_accounts() %}
+{# bag27:4/19/2023 Created a form with dropdown for user to select how much to deposit to their account #}
+<div class="container-fluid">
+    <div class="h3">Internal Transfer</div>
+    <div>
+        <form method="POST">
+            <div class="form-group mb-3">
+                <label class="form-label" for="sa">Source Account</label>
+                <select class="form-select mb-3" id="sa" name="sa">
+                    {% for a in acc %}
+                    <option value="{{a['account_number']}}">{{a['account_number']}}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group mb-3">
+                <label class="form-label" for="da">Destination Account</label>
+                <select class="form-select mb-3" id="da" name="da">
+                    {% for a in acc %}
+                    <option value="{{a['account_number']}}">{{a['account_number']}}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group mb-3">
+                <label class="form-label" for="dep">Deposit Amount</label>
+                <input type="text" class="form-control" id="dep" name="dep" />
+            </div>
+            <div class="form-group mb-3">
+                <label class="form-label" for="memo">Memo</label>
+                <input type="text" class="form-control" id="memo" name="memo" />
+            </div>
+            <input type="submit" class="btn btn-primary" value="Transfer" />
+        </form>
+    </div>
+</div>
+{% endblock %}
