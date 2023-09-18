@@ -1,0 +1,40 @@
+{% extends "layout.html" %}
+{% block title %}Your Accounts{% endblock %}
+{% block content %}
+{# bag27:4/18/2023 Created page for user to see all their accounts #}
+<div class="container-fluid">
+    <div class="h1 text-center">Your Accounts</div>
+    <form method="GET">
+    </form>
+    <table class="table">
+        {% if rows and rows|length > 0 %}
+        <thead>
+            <tr class="text-capitalize">
+                {% for r in rows[0] %}
+                <th>{{r.replace('_', ' ')}}</th>
+                {% endfor %}
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in rows %}
+            <tr>
+                {% for v in r.values() %}
+                <td>{{v}}</td>
+                {% endfor %}
+                <td><a href="{{url_for('accounts.history', account_number=r.get('account_number'))}}"
+                    class="btn btn-secondary btn-sm">History</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        {% else %}
+        <tbody>
+            <tr>
+                <td colspan="100%">No results to show</td>
+            </tr>
+        </tbody>
+        {% endif %}
+    </table>
+</div>
+{% endblock %}

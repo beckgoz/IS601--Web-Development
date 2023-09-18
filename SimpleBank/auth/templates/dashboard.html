@@ -1,0 +1,13 @@
+{% extends "layout.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="container-fluid">
+    <div class="h3">Welcome</div>
+    {{current_user.first_name}}
+    <div id="footer" class="footer bg-light text-center">
+        {% block footer %}
+        &copy; Copyright 2023.
+        {% endblock %}
+    </div>
+</div>
+{% endblock %}
